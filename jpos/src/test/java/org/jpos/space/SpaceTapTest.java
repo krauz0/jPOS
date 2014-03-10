@@ -47,10 +47,10 @@ public class SpaceTapTest {
 
     @Test
     public void testConstructor() throws Throwable {
-        LocalSpace ssp = new TSpace();
+        TSpace ssp = new TSpace();
         Object key = new Object();
         SpaceTap spaceTap = new SpaceTap(ssp, ssp, key, "", 100L);
-        assertFalse("(TSpace) ssp.sl.isEmpty()", ((TSpace) ssp).sl.isEmpty());
+        assertFalse("(TSpace) ssp.sl.isEmpty()", ((TSpace) ssp.sl.get()).isEmpty());
         assertSame("spaceTap.dsp", ssp, spaceTap.dsp);
         assertSame("spaceTap.key", key, spaceTap.key);
         assertEquals("spaceTap.tapKey", "", spaceTap.tapKey);

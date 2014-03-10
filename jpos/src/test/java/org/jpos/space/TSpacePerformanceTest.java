@@ -28,7 +28,6 @@ import org.jpos.iso.ISOUtil;
 
 import org.jpos.util.TPS;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNull;
@@ -44,7 +43,6 @@ public class TSpacePerformanceTest  {
     LocalSpace<String,Object> sp2;
     List<Long> t1 = new ArrayList();
     List<Long> t2 = new ArrayList();
-//    List t1 = Collections.synchronizedCollection(new ArrayList());
     public static final int COUNT = 100000;
     TPS tpsOut = new TPS(100L, false);
     TPS tpsIn = new TPS(100L, false);
@@ -55,6 +53,8 @@ public class TSpacePerformanceTest  {
         WriteSpaceTask(String key){
            this.key = key;
         }
+
+        @Override
         public void run (){
           long stamp = System.nanoTime();
           for (int i=0; i<COUNT; i++) {
@@ -73,6 +73,8 @@ public class TSpacePerformanceTest  {
         ReadSpaceTask(String key){
            this.key = key;
         }
+
+        @Override
         public void run (){
           long stamp = System.nanoTime();
           for (int i=0; i<COUNT; i++) {
@@ -96,6 +98,8 @@ public class TSpacePerformanceTest  {
           this.sp1 = sp1;
           this.sp2 = sp2;
         }
+
+        @Override
         public void run (){
           sp1.addListener(key, this);
           long stamp = System.nanoTime();
@@ -106,6 +110,7 @@ public class TSpacePerformanceTest  {
           System.err.println("Perform. "+key+" out: "+(stamp2-stamp)/1000000);
         }
 
+        @Override
         public void notify(String key, Object value) {
           if ( (++count % 100) == 0) {
             sp2.out(key, value);
@@ -119,11 +124,15 @@ public class TSpacePerformanceTest  {
         WriteSpaceWithNotifyReadTask(String key){
           this.key = key;
         }
+
+        @Override
         public void run (){
           sp1.addListener(key, this);
           for (int i=0; i<COUNT; i++)
              sp1.out(key, Boolean.TRUE);
         }
+
+        @Override
         public void notify(String key, Object value) {
           if ( sp1.rdp(key) == null)
             sp2.out("lost-entry", value);
@@ -199,7 +208,6 @@ public class TSpacePerformanceTest  {
         es.awaitTermination(5, TimeUnit.SECONDS);
     }
 
-    @Ignore("Remove it when TSpace can pass it")
     @Test
     public void testStolenEntryAtNotify() throws Throwable {
         int size = 10;
@@ -209,6 +217,7 @@ public class TSpacePerformanceTest  {
         
         for (int i=0; i<size; i++)
           es.execute(new WriteSpaceWithNotifyReadTask("WriteTask-"+i));
+        ISOUtil.sleep(500);
 
         //Threads which may stole entries
         for (int i=0; i<size; i++)
