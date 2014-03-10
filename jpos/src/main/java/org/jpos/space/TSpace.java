@@ -17,11 +17,13 @@
  */
 
 package org.jpos.space;
-import org.jpos.util.Loggeable;
 import java.io.PrintStream;
+import org.jpos.util.Loggeable;
 import java.util.*;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * TSpace implementation
@@ -31,29 +33,37 @@ import java.util.concurrent.TimeUnit;
  */
 
 public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
-    protected Map entries;
-    protected TSpace sl;    // space listeners
+    protected ConcurrentMap<Object,List> entries;
+    protected AtomicReference<TSpace<Object,List>> sl;    // space listeners
     public static final long GCDELAY = 5*1000;
     private static final long GCLONG = 60*1000;
     private static final long NRD_RESOLUTION = 500L;
-    private Set[] expirables;
+    private final Set<K>[] expirables;
     private long lastLongGC = System.currentTimeMillis();
 
     public TSpace () {
         super();
-        entries = new HashMap ();
-        expirables = new Set[] { new HashSet<K>(), new HashSet<K>() };
+        entries = new ConcurrentHashMap ();
+        sl = new AtomicReference();
+        expirables = new Set[] { Collections.newSetFromMap(new ConcurrentHashMap()), Collections.newSetFromMap(new ConcurrentHashMap()) };
         SpaceFactory.getGCExecutor().scheduleAtFixedRate(this, GCDELAY, GCDELAY, TimeUnit.MILLISECONDS);
+    }
+    private void notifyAll (List l) {
+       l.notifyAll();
+       synchronized (this) {
+           this.notifyAll();
+       }
     }
     public void out (K key, V value) {
         if (key == null || value == null)
             throw new NullPointerException ("key=" + key + ", value=" + value);
-        synchronized(this) {
-            getList (key).add (value);
-            this.notifyAll ();
-        }
-        if (sl != null)
+
+        final List l = getList(key);
+        synchronized (l) {
+            l.add(value);
+            notifyAll(l);
             notifyListeners(key, value);
+        }
     }
     public void out (K key, V value, long timeout) {
         if (key == null || value == null)
@@ -62,89 +72,107 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
         if (timeout > 0) {
             v = new Expirable (value, System.currentTimeMillis() + timeout);
         }
-        synchronized (this) {
-            getList (key).add (v);
-            this.notifyAll ();
-            if (timeout > 0) {
+        final List l = getList(key);
+        synchronized (l) {
+            if (timeout > 0)
                 registerExpirable(key, timeout);
-            }
-        }
-        if (sl != null)
+            l.add(v);
+            notifyAll(l);
             notifyListeners(key, value);
+        }
     }
-    public synchronized V rdp (Object key) {
+    public V rdp (Object key) {
         if (key instanceof Template)
             return (V) getObject ((Template) key, false);
         return (V) getHead (key, false);
     }
-    public synchronized V inp (Object key) {
+    public V inp (Object key) {
         if (key instanceof Template)
             return (V) getObject ((Template) key, true);
         return (V) getHead (key, true);
     }
-    public synchronized V in (Object key) {
-        Object obj;
-        while ((obj = inp (key)) == null) {
-            try {
-                this.wait ();
-            } catch (InterruptedException e) { }
-        }
-        return (V) obj;
+    private void removeLock(List l, Object key) {
+        if ( l.isEmpty() )
+            entries.remove(key);
     }
-    public synchronized V in  (Object key, long timeout) {
-        Object obj;
+    public V in (Object key) {
+        V obj;
+        List l = getList(key);
+        synchronized (l) {
+            while ((obj = inp (key)) == null)
+                try {
+                    l.wait();
+                } catch (InterruptedException e) {}
+            removeLock(l, key);
+         }
+        return obj;
+    }
+    public V in (Object key, long timeout) {
+        V obj;
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while ((obj = inp (key)) == null && 
-                ((now = System.currentTimeMillis()) < end))
-        {
-            try {
-                this.wait (end - now);
-            } catch (InterruptedException e) { }
+        final List l = getList(key);
+        synchronized (l) {
+            while ((obj = inp (key)) == null &&
+                    ((now = System.currentTimeMillis()) < end))
+                try {
+                    l.wait(end - now);
+                } catch (InterruptedException e) {}
+            removeLock(l, key);
         }
-        return (V) obj;
+        return obj;
     }
-    public synchronized V rd  (Object key) {
-        Object obj;
-        while ((obj = rdp (key)) == null) {
-            try {
-                this.wait ();
-            } catch (InterruptedException e) { }
+    public V rd  (Object key) {
+        V obj;
+        final List l = getList(key);
+        synchronized (l) {
+            while ((obj = rdp (key)) == null)
+                try {
+                    l.wait ();
+                } catch (InterruptedException e) {}
+            removeLock(l, key);
         }
-        return (V) obj;
+        return obj;
     }
-    public synchronized V rd  (Object key, long timeout) {
-        Object obj;
+    public V rd  (Object key, long timeout) {
+        V obj;
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while ((obj = rdp (key)) == null && 
-                ((now = System.currentTimeMillis()) < end))
-        {
-            try {
-                this.wait (end - now);
-            } catch (InterruptedException e) { }
+        final List l = getList(key);
+        synchronized (l) {
+            while ((obj = rdp (key)) == null &&
+                    ((now = System.currentTimeMillis()) < end))
+                try {
+                    l.wait (end - now);
+                } catch (InterruptedException e) { }
+            removeLock(l, key);
         }
-        return (V) obj;
+        return obj;
     }
-    public synchronized void nrd  (Object key) {
-        while (rdp (key) != null) {
-            try {
-                this.wait (NRD_RESOLUTION);
-            } catch (InterruptedException ignored) { }
+    public void nrd  (Object key) {
+        final List l = getList(key);
+        synchronized (l) {
+            while (rdp (key) != null)
+                try {
+                    l.wait(NRD_RESOLUTION);
+                } catch (InterruptedException ignored) { }
+            removeLock(l, key);
         }
     }
-    public synchronized V nrd  (Object key, long timeout) {
-        Object obj;
+    public V nrd  (Object key, long timeout) {
+        V obj;
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while ((obj = rdp (key)) != null &&
-                ((now = System.currentTimeMillis()) < end))
-        {
-            try {
-                this.wait (Math.min(NRD_RESOLUTION, end - now));
-            } catch (InterruptedException ignored) { }
+        final List l = getList(key);
+        synchronized (l) {
+            while ((obj = rdp (key)) != null &&
+                    ((now = System.currentTimeMillis()) < end))
+                try {
+                    l.wait (Math.min(NRD_RESOLUTION, end - now));
+                } catch (InterruptedException ignored) { }
+            removeLock(l, key);
         }
-        return (V) obj;
+        return obj;
     }
     public void run () {
         try {
@@ -162,46 +190,37 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
     }
     private void gc (int generation) {
         Set<K> exps = expirables[generation];
-        synchronized (this) {
-            expirables[generation] = new HashSet<K>();
-        }
         for (K k : exps) {
-            if (rdp(k) != null) {
-                synchronized (this) {
-                    expirables[generation].add(k);
-                }
-            }
+            if (rdp(k) == null)
+                expirables[generation].remove(k);
+
             Thread.yield ();
-        }
-        if (sl != null) {
-            synchronized (this) {
-                if (sl != null && sl.isEmpty())
-                    sl = null;
-            }
         }
     }
 
-    public synchronized int size (Object key) {
+    public int size (Object key) {
         int size = 0;
-        List l = (List) entries.get (key);
-        if (l != null) 
+        List l = entries.get(key);
+        if (l != null)
             size = l.size();
         return size;
     }
-    public synchronized void addListener (Object key, SpaceListener listener) {
+    public void addListener (Object key, SpaceListener listener) {
         getSL().out (key, listener);
     }
-    public synchronized void addListener 
+    public void addListener
         (Object key, SpaceListener listener, long timeout) 
     {
         getSL().out (key, listener, timeout);
     }
-    public synchronized void removeListener 
+    public void removeListener
         (Object key, SpaceListener listener) 
     {
-        if (sl != null) {
-            sl.inp (new ObjectTemplate (key, listener));
+        Space sp = sl.get();
+        if (sp != null) {
+            sp.inp (new ObjectTemplate (key, listener));
         }
+        sl.compareAndSet(new TSpace<Object,List>(), null);
     }
     public boolean isEmpty() {
         return entries.isEmpty();
@@ -211,61 +230,48 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
     }
     public String getKeysAsString () {
         StringBuilder sb = new StringBuilder();
-        Object[] keys;
-        synchronized (this) {
-            keys = entries.keySet().toArray();
-        }
-        for (int i=0; i<keys.length; i++) {
-            if (i > 0)
+        for (Object key: entries.keySet()) {
+            if (sb.length()>0)
                 sb.append (' ');
-            sb.append (keys[i]);
+            sb.append (key);
         }
         return sb.toString();
     }
     public void dump(PrintStream p, String indent) {
-        Object[] keys;
-        synchronized (this) {
-            keys = entries.keySet().toArray();
-        }
+        Set keys = entries.keySet();
         for (Object key : keys) {
             p.printf("%s<key count='%d'>%s</key>\n", indent, size(key), key);
         }
-        p.println(indent+"<keycount>"+(keys.length-1)+"</keycount>");
+        p.println(indent+"<keycount>"+(keys.size()-1)+"</keycount>");
         int exp0, exp1;
-        synchronized (this) {
-            exp0 = expirables[0].size();
-            exp1 = expirables[1].size();
-        }
+        exp0 = expirables[0].size();
+        exp1 = expirables[1].size();
         p.println(String.format("%s<gcinfo>%d,%d</gcinfo>\n", indent, exp0, exp1));
     }
-    public void notifyListeners (Object key, Object value) {
-        Object[] listeners = null;
-        synchronized (this) {
-            if (sl == null)
-                return;
-            List l = (List) sl.entries.get (key);
-            if (l != null)
-                listeners = l.toArray();
-        }
-        if (listeners != null) {
-            for (Object listener : listeners) {
-                Object o = listener;
-                if (o instanceof Expirable)
-                    o = ((Expirable) o).getValue();
-                if (o instanceof SpaceListener)
-                    ((SpaceListener) o).notify(key, value);
-            }
+    private void notifyListeners (Object key, Object value) {
+        TSpace sp = sl.get();
+        if (sp == null || sp.isEmpty())
+            return;
+        List l = (List)sp.entries.get (key);
+        if (l==null)
+            return;
+        for (Object o :l) {
+            if (o instanceof Expirable)
+                o = ((Expirable) o).getValue();
+            if (o instanceof SpaceListener)
+                ((SpaceListener) o).notify(key, value);
         }
     }
     public void push (K key, V value) {
         if (key == null || value == null)
             throw new NullPointerException ("key=" + key + ", value=" + value);
-        synchronized(this) {
-            getList (key).add (0, value);
-            this.notifyAll ();
-        }
-        if (sl != null)
+
+        List l = getList(key);
+        synchronized (l) {
+            l.add(0, value);
+            notifyAll(l);
             notifyListeners(key, value);
+        }
     }
 
     public void push (K key, V value, long timeout) {
@@ -275,29 +281,28 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
         if (timeout > 0) {
             v = new Expirable (value, System.currentTimeMillis() + timeout);
         }
-        synchronized (this) {
-            getList (key).add (0, v);
-            this.notifyAll ();
-            if (timeout > 0) {
+
+        List l = getList(key);
+        synchronized (l) {
+            if (timeout > 0)
                 registerExpirable(key, timeout);
-            }
-        }
-        if (sl != null)
+            l.add(0, v);
+            notifyAll(l);
             notifyListeners(key, value);
+        }
     }
 
     public void put (K key, V value) {
         if (key == null || value == null)
             throw new NullPointerException ("key=" + key + ", value=" + value);
 
-        synchronized (this) {
-            List l = new LinkedList();
-            l.add (value);
-            entries.put (key, l);
-            this.notifyAll ();
-        }
-        if (sl != null)
+        List l = new LinkedList();
+        synchronized (l) {
+            l.add(value);
+            entries.put(key, l);
+            notifyAll(l);
             notifyListeners(key, value);
+        }
     }
     public void put (K key, V value, long timeout) {
         if (key == null || value == null)
@@ -306,17 +311,15 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
         if (timeout > 0) {
             v = new Expirable (value, System.currentTimeMillis() + timeout);
         }
-        synchronized (this) {
-            List l = new LinkedList();
-            l.add (v);
-            entries.put (key, l);
-            this.notifyAll ();
-            if (timeout > 0) {
+        List l = getList(key);
+        synchronized (l) {
+            if (timeout > 0)
                 registerExpirable(key, timeout);
-            }
-        }
-        if (sl != null)
+            l.add(v);
+            entries.put(key, l);
+            notifyAll(l);
             notifyListeners(key, value);
+        }
     }
     public boolean existAny (K[] keys) {
         for (K key : keys) {
@@ -328,10 +331,10 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
     public boolean existAny (K[] keys, long timeout) {
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while (((now = System.currentTimeMillis()) < end)) {
-            if (existAny (keys))
-                return true;
-            synchronized (this) {
+        synchronized (this) {
+            while (((now = System.currentTimeMillis()) < end)) {
+                if (existAny (keys))
+                    return true;
                 try {
                     wait (end - now);
                 } catch (InterruptedException e) { }
@@ -350,80 +353,87 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
      * unstandard method (required for space replication) - use with care
      * @param entries underlying entry map
      */
-    public void setEntries (Map entries) {
+    public void setEntries (ConcurrentMap entries) {
         this.entries = entries;
     }
     private List getList (Object key) {
-        List l = (List) entries.get (key);
-        if (l == null) 
-            entries.put (key, l = new LinkedList());
-        return l;
+        List l = new LinkedList();
+        List lo = entries.putIfAbsent(key, l);
+        return lo == null ? l : lo;
     }
     private Object getHead (Object key, boolean remove) {
         Object obj = null;
-        List l = (List) entries.get (key);
+        if (key==null)
+          return obj;
+        List l = entries.get (key);
+        if (l==null)
+          return obj;
+
         boolean wasExpirable = false;
-        while (obj == null && l != null && l.size() > 0) {
-            obj = l.get(0);
-            if (obj instanceof Expirable) { 
-                obj = ((Expirable) obj).getValue();
-                wasExpirable = true;
+        synchronized (l) {
+            while (obj == null && !l.isEmpty()) {
+                obj = l.get(0);
+                if (obj instanceof Expirable) {
+                    obj = ((Expirable) obj).getValue();
+                    wasExpirable = true;
+                }
+                if (obj == null) {
+                    l.remove (0);
+                    if (l.isEmpty()) {
+                        entries.remove (key);
+                    }
+                }
             }
-            if (obj == null) {
+            if (obj != null && remove) {
                 l.remove (0);
                 if (l.isEmpty()) {
                     entries.remove (key);
+                    if (wasExpirable)
+                        unregisterExpirable(key);
                 }
-            }
-        }
-        if (obj != null && remove) {
-            l.remove (0);
-            if (l.isEmpty()) {
-                entries.remove (key);
-                if (wasExpirable)
-                    unregisterExpirable(key);
             }
         }
         return obj;
     }
     private Object getObject (Template tmpl, boolean remove) {
         Object obj = null;
-        List l = (List) entries.get (tmpl.getKey());
+        List l = entries.get (tmpl.getKey());
         if (l == null)
             return obj;
-
-        Iterator iter = l.iterator();
-        while (iter.hasNext()) {
-            obj = iter.next();
-            if (obj instanceof Expirable) {
-                obj = ((Expirable) obj).getValue();
-                if (obj == null) {
-                    iter.remove();
-                    continue;
+        synchronized (l) {
+            Iterator iter = l.iterator();
+            while (iter.hasNext()) {
+                obj = iter.next();
+                if (obj instanceof Expirable) {
+                    obj = ((Expirable) obj).getValue();
+                    if (obj == null) {
+                        iter.remove();
+                        continue;
+                    }
                 }
+                if (tmpl.equals (obj)) {
+                    if (remove)
+                        iter.remove();
+                    break;
+                } else
+                    obj = null;
             }
-            if (tmpl.equals (obj)) {
-                if (remove)
-                    iter.remove();
-                break;
-            } else
-                obj = null;
         }
         return obj;
     }
     private TSpace getSL() {
-        synchronized (this) {
-            if (sl == null)
-                sl = new TSpace();
-        }
-        return sl;
+        TSpace sp = sl.get();
+        TSpace spn = new TSpace();
+        if (sl.compareAndSet(null, spn))
+          sp = spn;
+        return sp;
     }
     private void registerExpirable(K k, long t) {
         expirables[t > GCLONG ? 1 : 0].add(k);
     }
     private void unregisterExpirable(Object k) {
         for (Set<K> s : expirables)
-            s.remove(k);
+            s.remove((K)k);
     }
     static class Expirable implements Comparable {
         Object value;

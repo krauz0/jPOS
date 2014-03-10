@@ -246,7 +246,7 @@ public class TSpaceTestCase implements SpaceListener {
         assertFalse("existAny ([KEYC,KEYD])", sp.existAny(new String[] { "KEYC", "KEYD" }));
     }
 
-    @Test
+    @Test(timeout = 5000)
     public void testExistWithTimeout() {
         assertFalse("existAnyWithTimeout ([KA,KB])", sp.existAny(new String[] { "KA", "KB" }));
         assertFalse("existAnyWithTimeout ([KA,KB], delay)", sp.existAny(new String[] { "KA", "KB" }, 1000L));
