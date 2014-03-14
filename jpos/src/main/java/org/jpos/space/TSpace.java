@@ -20,9 +20,15 @@ package org.jpos.space;
 import java.io.PrintStream;
 import org.jpos.util.Loggeable;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -48,12 +54,6 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
         expirables = new Set[] { Collections.newSetFromMap(new ConcurrentHashMap()), Collections.newSetFromMap(new ConcurrentHashMap()) };
         SpaceFactory.getGCExecutor().scheduleAtFixedRate(this, GCDELAY, GCDELAY, TimeUnit.MILLISECONDS);
     }
-    private void notifyAll (List l) {
-       l.notifyAll();
-       synchronized (this) {
-           this.notifyAll();
-       }
-    }
     public void out (K key, V value) {
         if (key == null || value == null)
             throw new NullPointerException ("key=" + key + ", value=" + value);
@@ -61,7 +61,7 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
         final List l = getList(key);
         synchronized (l) {
             l.add(value);
-            notifyAll(l);
+            l.notifyAll();
             notifyListeners(key, value);
         }
     }
@@ -77,7 +77,7 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
             if (timeout > 0)
                 registerExpirable(key, timeout);
             l.add(v);
-            notifyAll(l);
+            l.notifyAll();
             notifyListeners(key, value);
         }
     }
@@ -269,7 +269,7 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
         List l = getList(key);
         synchronized (l) {
             l.add(0, value);
-            notifyAll(l);
+            l.notifyAll();
             notifyListeners(key, value);
         }
     }
@@ -287,7 +287,7 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
             if (timeout > 0)
                 registerExpirable(key, timeout);
             l.add(0, v);
-            notifyAll(l);
+            l.notifyAll();
             notifyListeners(key, value);
         }
     }
@@ -300,7 +300,7 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
         synchronized (l) {
             l.add(value);
             entries.put(key, l);
-            notifyAll(l);
+            l.notifyAll();
             notifyListeners(key, value);
         }
     }
@@ -317,7 +317,7 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
                 registerExpirable(key, timeout);
             l.add(v);
             entries.put(key, l);
-            notifyAll(l);
+            l.notifyAll();
             notifyListeners(key, value);
         }
     }
@@ -328,18 +328,60 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
         }
         return false;
     }
-    public boolean existAny (K[] keys, long timeout) {
-        long now = System.currentTimeMillis();
-        long end = now + timeout;
-        synchronized (this) {
-            while (((now = System.currentTimeMillis()) < end)) {
-                if (existAny (keys))
-                    return true;
-                try {
-                    wait (end - now);
-                } catch (InterruptedException e) { }
-            }
+    class ExistAnyTask<K>  implements Callable<Boolean> {
+
+        K key;
+        final K[] keys;
+        long timeout;
+
+        ExistAnyTask(K key, K[] keys, long timeout) {
+          this.key  = key;
+          this.keys = keys;
         }
+        @Override
+        public Boolean call() {
+          boolean r = false;
+          if (rd(key, timeout)!=null)
+            r = true;
+          synchronized(keys) {
+              keys.notifyAll();
+          }
+          return r;
+        }
+      
+    }
+    public boolean existAny (K[] keys, long timeout) {
+        ExecutorService es = new ThreadPoolExecutor(keys.length, keys.length+2
+                    ,timeout, TimeUnit.MILLISECONDS, new SynchronousQueue());
+        ((ThreadPoolExecutor) es).prestartAllCoreThreads();
+        List<Callable<Boolean>> cl = new ArrayList(keys.length);
+        for (K key : keys)
+            cl.add(new ExistAnyTask<K>(key, keys, timeout));
+        try {
+          return es.invokeAny(cl, timeout, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ex) {
+        } catch (ExecutionException ex) {
+        } catch (TimeoutException ex) {
+        } finally {
+          es.shutdown();
+        }
+
+//        List<Future<Boolean>> fl = new ArrayList(keys.length);
+//        for (K key : keys) {
+//            Callable c  = new ExistAnyTask<K>(key, keys, timeout);
+//            fl.add(es.submit(c));
+//        }
+//        synchronized(keys) {
+//            try {
+//                keys.wait(timeout);
+//            } catch (InterruptedException e) { }
+//        }
+//        try {
+//          for ( Future<Boolean> f : fl)
+//              if (f.get())
+//                  return true;
+//        } catch (InterruptedException e) {
+//        } catch (ExecutionException e) { }
         return false;
     }
     /**
