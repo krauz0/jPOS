@@ -52,6 +52,7 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
 
         final List l = getList(key);
         synchronized (l) {
+            entries.putIfAbsent(key, l);
             l.add (value);
             if (l.size() == 1)
                 l.notifyAll();
@@ -67,6 +68,7 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
         }
         final List l = getList(key);
         synchronized (l) {
+            entries.putIfAbsent(key, l);
             if (timeout > 0)
                 registerExpirable(key, timeout);
             l.add(v);
@@ -262,6 +264,7 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
 
         List l = getList(key);
         synchronized (l) {
+            entries.putIfAbsent(key, l);
             boolean wasEmpty = l.isEmpty();
             l.add (0, value);
             if (wasEmpty)
@@ -280,6 +283,7 @@ public class TSpace<K,V> implements LocalSpace<K,V>, Loggeable, Runnable {
 
         List l = getList(key);
         synchronized (l) {
+            entries.putIfAbsent(key, l);
             if (timeout > 0)
                 registerExpirable(key, timeout);
             boolean wasEmpty = l.isEmpty();
