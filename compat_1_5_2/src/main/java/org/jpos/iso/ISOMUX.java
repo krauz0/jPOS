@@ -492,6 +492,10 @@ public class ISOMUX implements Runnable, LogSource, MUX,
     public boolean isConnected() {
         return channel.isConnected();
     }
+    @Override
+    public boolean isSigned() {
+        return isConnected();
+    }
     public void setLogger (Logger logger, String realm) {
         this.logger = logger;
         this.realm  = realm;

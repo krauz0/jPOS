@@ -42,4 +42,9 @@ public interface MUX extends ISOSource {
      */
     public void request (ISOMsg m, long timeout, ISOResponseListener r, Object handBack)
         throws ISOException;
+    
+    /**
+     * @return true if source is signed
+     */
+    public boolean isSigned();
 }

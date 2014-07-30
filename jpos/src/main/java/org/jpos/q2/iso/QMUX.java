@@ -46,6 +46,7 @@ public class QMUX
     protected LocalSpace sp;
     protected String in, out, unhandled;
     protected String[] ready;
+    protected String[] signedQ;
     protected String[] key;
     protected String ignorerc;
     protected String[] mtiMapping;
@@ -69,6 +70,7 @@ public class QMUX
         ignorerc  = e.getChildTextTrim ("ignore-rc");
         key = toStringArray(e.getChildTextTrim("key"), ", ", DEFAULT_KEY);
         ready     = toStringArray(e.getChildTextTrim ("ready"));
+        signedQ   = toStringArray(e.getChildTextTrim ("signed"));
         mtiMapping = toStringArray(e.getChildTextTrim ("mtimapping"));
         if (mtiMapping == null || mtiMapping.length != 3) 
             mtiMapping = new String[] { nomap, nomap, "0022446789" };
@@ -379,6 +381,19 @@ public class QMUX
         }
         return running();
     }
+
+    @Override
+    public boolean isSigned() {
+        if (signedQ != null && signedQ.length > 0) {
+            for (String aSignedQ : signedQ)
+                if (sp.rdp(aSignedQ) != null)
+                    return true;
+            return false;
+        }
+        else
+            return isConnected();
+    }
+
     public void dump (PrintStream p, String indent) {
         p.println (indent + getCountersAsString());
     }

@@ -87,6 +87,13 @@ public class MUXPool extends QBeanSupport implements MUX {
                 return true;
         return false;
     }
+    @Override
+    public boolean isSigned() {
+        for (MUX aMux : mux)
+            if (aMux.isSigned())
+                return true;
+        return false;
+    }
     private MUX firstAvailableMUX (long maxWait) {
         do {
             for (MUX aMux : mux)

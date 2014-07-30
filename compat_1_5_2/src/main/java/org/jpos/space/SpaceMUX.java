@@ -162,6 +162,10 @@ public class SpaceMUX extends SimpleLogSource
     public boolean isConnected () {
         return true;
     }
+    @Override
+    public boolean isSigned () {
+        return isConnected();
+    }
     public void request (ISOMsg m, long timeout, ISOResponseListener r, Object handBack) 
         throws ISOException 
     {
