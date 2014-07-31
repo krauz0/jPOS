@@ -67,6 +67,7 @@ public class SpaceMUX extends SimpleLogSource
      * reads "to", "from" and optional "unhandled" properties
      * @param cfg 
      */
+    @Override
     public void setConfiguration (Configuration cfg) 
         throws ConfigurationException
     {
@@ -82,6 +83,7 @@ public class SpaceMUX extends SimpleLogSource
      * @param timeout amount of time in millis to wait for a response
      * @return response or null
      */
+    @Override
     public ISOMsg request (ISOMsg m, long timeout) throws ISOException {
         String key = getKey (m);
         String req = key + ".req";
@@ -96,6 +98,8 @@ public class SpaceMUX extends SimpleLogSource
         }
         return resp;
     }
+
+    @Override
     public void send (ISOMsg m) throws ISOException, IOException {
         sp.out (to, m);
     }
@@ -109,6 +113,8 @@ public class SpaceMUX extends SimpleLogSource
                 ISOUtil.zeropad((String) m.getValue(11),6) :
                 Long.toString (System.currentTimeMillis()));
     }
+
+    @Override
     public void notify (Object k, Object value) {
         Object obj = sp.inp (k);
         if (obj instanceof ISOMsg) {
@@ -159,9 +165,13 @@ public class SpaceMUX extends SimpleLogSource
     {
         return (MUX) NameRegistrar.get ("mux."+name);
     }
+
+    @Override
     public boolean isConnected () {
         return true;
     }
+
+    @Override
     public void request (ISOMsg m, long timeout, ISOResponseListener r, Object handBack) 
         throws ISOException 
     {

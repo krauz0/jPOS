@@ -48,9 +48,13 @@ public class ChannelPool implements ISOChannel, LogSource, Configurable, Cloneab
         super ();
         pool = new Vector ();
     }
+
+    @Override
     public void setPackager(ISOPackager p) {
         // nothing to do
     }
+
+    @Override
     public synchronized void connect () throws IOException {
         current = null;
         LogEvent evt = new LogEvent (this, "connect");
@@ -76,6 +80,8 @@ public class ChannelPool implements ISOChannel, LogSource, Configurable, Cloneab
             throw new IOException ("unable to connect");
         }
     }
+
+    @Override
     public synchronized void disconnect () throws IOException {
         current = null;
         LogEvent evt = new LogEvent (this, "disconnect");
@@ -89,10 +95,14 @@ public class ChannelPool implements ISOChannel, LogSource, Configurable, Cloneab
         }
         Logger.log (evt);
     }
+
+    @Override
     public synchronized void reconnect() throws IOException {
         disconnect ();
         connect ();
     }
+
+    @Override
     public synchronized boolean isConnected() {
         try {
             return getCurrent().isConnected ();
@@ -100,38 +110,60 @@ public class ChannelPool implements ISOChannel, LogSource, Configurable, Cloneab
             return false;
         }
     }
+
+    @Override
     public ISOMsg receive() throws IOException, ISOException {
         return getCurrent().receive ();
     }
+
+    @Override
     public void send (ISOMsg m) throws IOException, ISOException {
         getCurrent().send (m);
     }
+
+    @Override
     public void send (byte[] b) throws IOException, ISOException {
         getCurrent().send (b);
     }
+
+    @Override
     public void setUsable(boolean b) {
         this.usable = b;
     }
+
+    @Override
     public void setName (String name) {
         this.name = name;
         NameRegistrar.register ("channel."+name, this);
     }
+
+    @Override
     public String getName() {
         return this.name;
     }
+
+    @Override
     public ISOPackager getPackager () {
         return null;
     }
+
+    @Override
     public void setLogger (Logger logger, String realm) {
         this.logger = logger;
         this.realm  = realm;
     }
+
+    @Override
     public String getRealm () {
         return realm;
     }
+
+    @Override
     public Logger getLogger() {
         return logger;
     }
+
+    @Override
     public synchronized void setConfiguration (Configuration cfg) 
         throws ConfigurationException
     {
@@ -171,6 +203,7 @@ public class ChannelPool implements ISOChannel, LogSource, Configurable, Cloneab
         return current;
     }
     
+    @Override
     public Object clone(){
       try {
         return super.clone();

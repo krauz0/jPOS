@@ -60,6 +60,8 @@ public class QMUX
         super ();
         listeners = new ArrayList<ISORequestListener>();
     }
+
+    @Override
     public void initService () throws ConfigurationException {
         Element e = getPersist ();
         sp        = grabSpace (e.getChild ("space"));
@@ -76,6 +78,8 @@ public class QMUX
         unhandled = e.getChildTextTrim ("unhandled");
         NameRegistrar.register ("mux."+getName (), this);
     }
+
+    @Override
     public void startService () {
         if (!listenerRegistered) {
             listenerRegistered = true;
@@ -88,10 +92,14 @@ public class QMUX
             }
         }
     }
+
+    @Override
     public void stopService () {
         listenerRegistered = false;
         sp.removeListener (in, this);
     }
+
+    @Override
     public void destroyService () {
         NameRegistrar.unregister ("mux."+getName ());
     }
@@ -112,6 +120,7 @@ public class QMUX
      * @param timeout amount of time in millis to wait for a response
      * @return response or null
      */
+    @Override
     public ISOMsg request (ISOMsg m, long timeout) throws ISOException {
         String key = getKey (m);
         String req = key + ".req";
@@ -153,6 +162,8 @@ public class QMUX
         }
         return resp;
     }
+
+    @Override
     public void notify (Object k, Object value) {
         Object obj = sp.inp (k);
         if (obj instanceof ISOMsg) {
@@ -206,6 +217,7 @@ public class QMUX
             throw new ISOException ("Key fields not found - not sending " + sb.toString());
         return sb.toString();
     }
+
     private String mapMTI (String mti) throws ISOException {
         StringBuilder sb = new StringBuilder();
         if (mti != null) {
@@ -221,33 +233,48 @@ public class QMUX
         }
         return sb.toString();
     }
+
+    @Override
     public synchronized void setInQueue (String in) {
         this.in = in;
         getPersist().getChild("in").setText (in);
         setModified (true);
     }
+
+    @Override
     public String getInQueue () {
         return in;
     }
+
+    @Override
     public synchronized void setOutQueue (String out) {
         this.out = out; 
         getPersist().getChild("out").setText (out);
         setModified (true);
     }
+
+    @Override
     public String getOutQueue () {
         return out;
     }
+
     public Space getSpace() {
         return sp;
     }
+
+    @Override
     public synchronized void setUnhandledQueue (String unhandled) {
         this.unhandled = unhandled;
         getPersist().getChild("unhandled").setText (unhandled);
         setModified (true);
     }
+
+    @Override
     public String getUnhandledQueue () {
         return unhandled;
     }
+
+    @Override
     public void request (ISOMsg m, long timeout, ISOResponseListener rl, Object handBack)
         throws ISOException 
     {
@@ -264,10 +291,12 @@ public class QMUX
         isp.out (req, ar, timeout);
         sp.out (out, m, timeout);
     }
+
     @SuppressWarnings("unused")
     public String[] getReadyIndicatorNames() {
         return ready;
     }
+
     private void addListeners () 
         throws ConfigurationException
     {
@@ -284,16 +313,22 @@ public class QMUX
             addISORequestListener (listener);
         }
     }
+
     public void addISORequestListener(ISORequestListener l) {
         listeners.add (l);
     }
+
     public boolean removeISORequestListener(ISORequestListener l) {
     	return listeners.remove(l);
     }
+
+    @Override
     public synchronized void resetCounters() {
         rx = tx = rxExpired = txExpired = rxPending = rxUnhandled = rxForwarded = 0;
         lastTxn = 0l;
     }
+
+    @Override
     public String getCountersAsString () {
         StringBuffer sb = new StringBuffer();
         append (sb, "tx=", tx);
@@ -315,17 +350,23 @@ public class QMUX
         }
         return sb.toString();
     }
-    
+
+    @Override
     public int getTXCounter() {
         return tx;
     }
+
+    @Override
     public int getRXCounter() {
         return rx;
     }
 
+    @Override
     public long getLastTxnTimestampInMillis() {
         return lastTxn;
     }
+
+    @Override
     public long getIdleTimeInMillis() {
         return lastTxn > 0L ? System.currentTimeMillis() - lastTxn : -1L;
     }
@@ -343,6 +384,7 @@ public class QMUX
             sp.out (unhandled, m, 120000);
         }
     }
+
     private LocalSpace grabSpace (Element e) 
         throws ConfigurationException
     {
@@ -362,12 +404,14 @@ public class QMUX
      * @throws org.jpos.iso.ISOException
      * @throws org.jpos.iso.ISOFilter.VetoException;
      */
+    @Override
     public void send(ISOMsg m) throws IOException, ISOException {
         if (!isConnected())
             throw new ISOException ("MUX is not connected");
         sp.out (out, m);
     }
 
+    @Override
     public boolean isConnected() {
         if (running() && ready != null && ready.length > 0) {
             for (String aReady : ready)
@@ -377,9 +421,12 @@ public class QMUX
         }
         return running();
     }
+
+    @Override
     public void dump (PrintStream p, String indent) {
         p.println (indent + getCountersAsString());
     }
+
     private String[] toStringArray(String s, String delimiter, String def) {
         if (s == null)
             s = def;
@@ -404,9 +451,11 @@ public class QMUX
         }
         return arr;
     }
+
     private String[] toStringArray(String s) {
         return toStringArray(s, null,null);
     }
+
     private boolean shouldIgnore (ISOMsg m) {
         if (m != null && ignorerc != null 
             && ignorerc.length() > 0 && m.hasField(39))
@@ -415,10 +464,12 @@ public class QMUX
         }
         return false;
     }
+
     private void append (StringBuffer sb, String name, int value) {
         sb.append (name);
         sb.append (value);
     }
+
     public static class AsyncRequest implements Runnable {
         ISOResponseListener rl;
         Object handBack;
@@ -435,6 +486,7 @@ public class QMUX
             if (future == null || future.cancel(false))
                 rl.responseReceived (response, handBack);
         }
+        @Override
         public void run() {
             rl.expired(handBack);
         }

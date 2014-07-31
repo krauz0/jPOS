@@ -50,10 +50,12 @@ public class LoopbackChannel extends FilteredBase implements LogSource {
     * setPackager is optional on LoopbackChannel, it is
     * used for debugging/formating purposes only
     */
+    @Override
     public void setPackager(ISOPackager packager) {
         // N/A
     }
     
+    @Override
     public void connect () {
         cnt[CONNECT]++;
         usable = true;
@@ -64,22 +66,26 @@ public class LoopbackChannel extends FilteredBase implements LogSource {
     /**
      * disconnects ISOChannel
      */
+    @Override
     public void disconnect () {
         usable = false;
         setChanged();
         notifyObservers();
     }
 
+    @Override
     public void reconnect() {
         usable = true;
         setChanged();
         notifyObservers();
     }
 
+    @Override
     public boolean isConnected() {
         return usable;
     }
 
+    @Override
     public void send (ISOMsg m)
         throws IOException,ISOException {
         if (!isConnected())
@@ -92,17 +98,19 @@ public class LoopbackChannel extends FilteredBase implements LogSource {
         Logger.log (evt);
     }
     
+    @Override
     public void send (byte[] b)
-    throws IOException,ISOException {
-    if (!isConnected())
-        throw new ISOException ("unconnected ISOChannel");
-    LogEvent evt = new LogEvent (this, "loopback-send", b);
-    queue.enqueue (b);
-    cnt[TX]++;
-    notifyObservers();
-    Logger.log (evt);
-}
+        throws IOException,ISOException {
+        if (!isConnected())
+            throw new ISOException ("unconnected ISOChannel");
+        LogEvent evt = new LogEvent (this, "loopback-send", b);
+        queue.enqueue (b);
+        cnt[TX]++;
+        notifyObservers();
+        Logger.log (evt);
+    }
 
+    @Override
     public ISOMsg receive() throws IOException, ISOException
     {
         if (!isConnected())
@@ -122,6 +130,7 @@ public class LoopbackChannel extends FilteredBase implements LogSource {
         }
     }
 
+    @Override
     public void setUsable(boolean usable) {
         this.usable = usable;
         setChanged();
@@ -132,15 +141,18 @@ public class LoopbackChannel extends FilteredBase implements LogSource {
         return cnt;
     }
 
+    @Override
     public void setName (String name) {
         this.name = name;
         NameRegistrar.register ("channel."+name, this);
     }
 
+    @Override
     public String getName() {
         return name;
     }
 
+    @Override
     public ISOPackager getPackager() {
         return null;
     }
@@ -149,13 +161,19 @@ public class LoopbackChannel extends FilteredBase implements LogSource {
         for (int i=0; i<SIZEOF_CNT; i++)
             cnt[i] = 0;
     }
+
+    @Override
     public void setLogger (Logger logger, String realm) {
         this.logger = logger;
         this.realm  = realm;
     }
+
+    @Override
     public String getRealm () {
         return realm;
     }
+
+    @Override
     public Logger getLogger() {
         return logger;
     }

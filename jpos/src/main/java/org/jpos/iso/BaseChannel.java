@@ -244,12 +244,15 @@ public abstract class BaseChannel extends Observable
     public int[] getCounters() {
         return cnt;
     }
+
     /**
      * @return the connection state
      */
+    @Override
     public boolean isConnected() {
         return socket != null && usable;
     }
+
     /**
      * setup I/O Streams from socket
      * @param socket a Socket (client or server)

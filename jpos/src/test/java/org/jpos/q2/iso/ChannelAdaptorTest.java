@@ -204,6 +204,7 @@ public class ChannelAdaptorTest {
                         && SIMULATED_SEND_ERROR_EXCEPTION_MESSAGE.equals(ev.getPayLoad().get(1));
             }
 
+            @Override
             public void describeTo(Description description) {
             }
         };
@@ -226,6 +227,7 @@ public class ChannelAdaptorTest {
 
     private Runnable logThreadDumpRunnable() {
         return new Runnable() {
+            @Override
             public void run() {
                 System.out.println("Something is probably going to fail due to a deadlock, dumping threads.");
                 System.out.println("You need to use kill -3 <pid> or jstack to get the full thread stack (who has which lock)");
@@ -236,6 +238,7 @@ public class ChannelAdaptorTest {
 
     private Future<Boolean> stopFuture() {
         return executorService.submit(new Callable<Boolean>() {
+            @Override
             public Boolean call() throws Exception {
                 Thread.currentThread().setName(STOP_CALLER_THREAD_NAME);
                 channelAdaptor.stop();
@@ -303,6 +306,7 @@ public class ChannelAdaptorTest {
                 return mti.equals(isoMsg.getString(0));
             }
 
+            @Override
             public void describeTo(Description description) {
                 description.appendText("ISOMsg with mti ").appendValue(mti);
             }
@@ -346,26 +350,32 @@ public class ChannelAdaptorTest {
         volatile boolean connected;
         Semaphore receiverWaiting = new Semaphore(0);
 
+        @Override
         public void setPackager(ISOPackager p) {
             throw new UnsupportedOperationException();
         }
 
+        @Override
         public void connect() throws IOException {
             connected = true;
         }
 
+        @Override
         public void disconnect() throws IOException {
             connected = false;
             receiveQueue.add(DISCONNECT_TOKEN);
         }
 
+        @Override
         public void reconnect() throws IOException {
         }
 
+        @Override
         public boolean isConnected() {
             return connected;
         }
 
+        @Override
         public ISOMsg receive() throws IOException, ISOException {
             if (!connected) {
                 throw new ISOException("unconnected ISOChannel");
@@ -382,26 +392,32 @@ public class ChannelAdaptorTest {
             }
         }
 
+        @Override
         public void send(ISOMsg m) throws IOException, ISOException {
             sendQueue.add(m);
         }
 
+        @Override
         public void send(byte[] b) throws IOException, ISOException {
             throw new UnsupportedOperationException();
         }
 
+        @Override
         public void setUsable(boolean b) {
             throw new UnsupportedOperationException();
         }
 
+        @Override
         public void setName(String name) {
             throw new UnsupportedOperationException();
         }
 
+        @Override
         public String getName() {
             throw new UnsupportedOperationException();
         }
 
+        @Override
         public ISOPackager getPackager() {
             throw new UnsupportedOperationException();
         }
@@ -478,6 +494,7 @@ public class ChannelAdaptorTest {
 
         public Stubber catchVictim() {
             return doAnswer(new Answer() {
+                @Override
                 public Object answer(InvocationOnMock invocation) throws Throwable {
                     assertThat(currentThreadName(), is(victimThreadName));
                     trappedSignal.release();
@@ -489,6 +506,7 @@ public class ChannelAdaptorTest {
 
         public Stubber release() {
             return doAnswer(new Answer() {
+                @Override
                 public Object answer(InvocationOnMock invocation) throws Throwable {
                     assertThat(currentThreadName(), is(STOP_CALLER_THREAD_NAME));
                     freedomSignal.release();
