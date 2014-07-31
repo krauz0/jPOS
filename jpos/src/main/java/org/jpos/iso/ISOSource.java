@@ -41,4 +41,9 @@ public interface ISOSource {
      * @return true if source is connected and usable
      */
     boolean isConnected();
+
+    /**
+     * @return true if source is signed and active
+     */
+    public boolean isSigned();
 }

@@ -100,10 +100,18 @@ public class MUXPool extends QBeanSupport implements MUX, MUXPoolMBean {
         return false;
     }
 
+    @Override
+    public boolean isSigned() {
+        for (MUX aMux : mux)
+            if (aMux.isSigned())
+                return true;
+        return false;
+    }
+
     protected MUX firstAvailableMUX (long maxWait) {
         do {
             for (MUX aMux : mux)
-                if (aMux.isConnected())
+                if (aMux.isSigned())
                     return aMux;
             ISOUtil.sleep (1000);
         } while (System.currentTimeMillis() < maxWait);
@@ -113,7 +121,7 @@ public class MUXPool extends QBeanSupport implements MUX, MUXPoolMBean {
         do {
             for (int i=0; i<mux.length; i++) {
                 int j = (mnumber+i) % mux.length;
-                if (mux[j].isConnected())
+                if (mux[j].isSigned())
                     return mux[j];
                 msgno.incrementAndGet();
             }

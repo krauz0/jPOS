@@ -522,6 +522,11 @@ public class ISOMUX implements Runnable, LogSource, MUX,
     }
 
     @Override
+    public boolean isSigned() {
+        return isConnected();
+    }
+
+    @Override
     public void setLogger (Logger logger, String realm) {
         this.logger = logger;
         this.realm  = realm;

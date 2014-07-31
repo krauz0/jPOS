@@ -254,6 +254,14 @@ public abstract class BaseChannel extends Observable
     }
 
     /**
+     * @return the signed state
+     */
+    @Override
+    public boolean isSigned() {
+        throw new UnsupportedOperationException("Operation not supported");
+    }
+
+    /**
      * setup I/O Streams from socket
      * @param socket a Socket (client or server)
      * @exception IOException on error

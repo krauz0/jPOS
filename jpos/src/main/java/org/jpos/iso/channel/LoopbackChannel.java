@@ -86,6 +86,11 @@ public class LoopbackChannel extends FilteredBase implements LogSource {
     }
 
     @Override
+    public boolean isSigned() {
+        throw new UnsupportedOperationException("Operation not supported");
+    }
+
+    @Override
     public void send (ISOMsg m)
         throws IOException,ISOException {
         if (!isConnected())

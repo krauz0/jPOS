@@ -112,6 +112,11 @@ public class ChannelPool implements ISOChannel, LogSource, Configurable, Cloneab
     }
 
     @Override
+    public synchronized boolean isSigned() {
+        throw new UnsupportedOperationException("Operation not supported");
+    }
+
+    @Override
     public ISOMsg receive() throws IOException, ISOException {
         return getCurrent().receive ();
     }

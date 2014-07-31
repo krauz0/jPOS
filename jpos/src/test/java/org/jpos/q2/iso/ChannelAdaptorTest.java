@@ -376,6 +376,10 @@ public class ChannelAdaptorTest {
         }
 
         @Override
+        public boolean isSigned() {
+            throw new UnsupportedOperationException("Operation not supported");
+        }
+
         public ISOMsg receive() throws IOException, ISOException {
             if (!connected) {
                 throw new ISOException("unconnected ISOChannel");
