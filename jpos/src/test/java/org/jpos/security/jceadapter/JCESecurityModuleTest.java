@@ -18,7 +18,13 @@
 
 package org.jpos.security.jceadapter;
 
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import static org.junit.Assert.*;
 
 import javax.crypto.spec.SecretKeySpec;
@@ -878,6 +884,83 @@ public class JCESecurityModuleTest {
         } catch (SMException ex){
             assertNull("ex.getMessage()", ex.getNested().getMessage());
         }
+    }
+
+    @Test
+    public void testSimpleDateFormat0() throws Throwable {
+      OutputStream os = new ByteArrayOutputStream(10240);
+      PrintStream p = new PrintStream(os);
+      Date d = new Date();
+      long stamp = System.currentTimeMillis();
+      for(int i=0; i<1000000; i++) {
+        p.println(d.toString());
+      }
+      System.out.print("Use Date.toString()             : ");
+      System.out.print(System.currentTimeMillis() - stamp);
+      System.out.println(" milis");
+    }
+
+    @Test
+    public void testSimpleDateFormat1() throws Throwable {
+      OutputStream os = new ByteArrayOutputStream(10240);
+      PrintStream p = new PrintStream(os);
+      Date d = new Date();
+      DateFormat df = new SimpleDateFormat("EEE MMM dd HH:mm:ss.SSS z yyyy", Locale.US);
+      p.println(df.format(d));
+      long stamp = System.currentTimeMillis();
+      for(int i=0; i<1000000; i++) {
+        p.println(df.format(d));
+      }
+      System.out.print("Access as static thread unsafe  : ");
+      System.out.print(System.currentTimeMillis() - stamp);
+      System.out.println(" milis");
+    }
+
+    @Test
+    public void testSimpleDateFormat2() throws Throwable {
+      OutputStream os = new ByteArrayOutputStream(10240);
+      PrintStream p = new PrintStream(os);
+      Date d = new Date();
+      DateFormat df = new SimpleDateFormat("EEE MMM dd HH:mm:ss.SSS z yyyy", Locale.US);
+      ThreadLocal<DateFormat> tldf = new ThreadLocal();
+      tldf.set(df);
+      long stamp = System.currentTimeMillis();
+      for(int i=0; i<1000000; i++) {
+        p.println(tldf.get().format(d));
+      }
+      System.out.print("Access as static by thread local: ");
+      System.out.print(System.currentTimeMillis() - stamp);
+      System.out.println(" milis");
+      tldf.remove();
+    }
+
+    @Test
+    public void testSimpleDateFormat3() throws Throwable {
+      OutputStream os = new ByteArrayOutputStream(10240);
+      PrintStream p = new PrintStream(os);
+      Date d = new Date();
+      long stamp = System.currentTimeMillis();
+      for(int i=0; i<1000000; i++) {
+        DateFormat df = new SimpleDateFormat("EEE MMM dd HH:mm:ss.SSS z yyyy", Locale.US);
+        p.println(df.format(d));
+      }
+      System.out.print("Multiple creating of DateFormat : ");
+      System.out.print(System.currentTimeMillis() - stamp);
+      System.out.println(" milis");
+    }
+
+    @Test
+    public void testSimpleDateFormat4() throws Throwable {
+      OutputStream os = new ByteArrayOutputStream(10240);
+      PrintStream p = new PrintStream(os);
+      Date d = new Date();
+      long stamp = System.currentTimeMillis();
+      for(int i=0; i<1000000; i++) {
+        p.println(ISODate.formatDate(d, "EEE MMM dd HH:mm:ss.SSS z yyyy"));
+      }
+      System.out.print("DateFormat.getDateTimeInstance(): ");
+      System.out.print(System.currentTimeMillis() - stamp);
+      System.out.println(" milis");
     }
 
     @Test
