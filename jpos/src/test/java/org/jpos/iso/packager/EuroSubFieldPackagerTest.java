@@ -18,17 +18,23 @@
 
 package org.jpos.iso.packager;
 
+import org.jpos.iso.IFA_LCHAR;
+import org.jpos.iso.IFA_LLLBINARY;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import org.jpos.iso.IFB_LLLCHAR;
+import org.jpos.iso.ISOBasePackager;
 import org.jpos.iso.ISOBinaryField;
 import org.jpos.iso.ISOException;
 import org.jpos.iso.ISOField;
 import org.jpos.iso.ISOFieldPackager;
 import org.jpos.iso.ISOMsg;
+import org.jpos.iso.ISOMsgFieldPackager;
+import org.jpos.iso.ISOUtil;
 import org.junit.Test;
 
 public class EuroSubFieldPackagerTest {
@@ -45,6 +51,51 @@ public class EuroSubFieldPackagerTest {
         EuroSubFieldPackager euroSubFieldPackager = new EuroSubFieldPackager();
         boolean result = euroSubFieldPackager.emitBitMap();
         assertFalse("result", result);
+    }
+
+    @Test
+    public void testPack00() throws Throwable {
+        ISOBasePackager sfp = new EuroSubFieldPackager();
+        sfp.setFieldPackager(new ISOFieldPackager[] {
+                new IFA_LCHAR(9, "Test Field Name")
+            }
+        );
+        ISOBasePackager fp = new EuroSubFieldPackager();
+        fp.setFieldPackager(new ISOFieldPackager[] {
+                new ISOMsgFieldPackager(
+                    new IFA_LLLBINARY (99, "EUROPAY NESTED FIELD")
+                   ,sfp
+                )
+            }
+        );
+        ISOMsg c = new ISOMsg();
+        c.set("0.0","foo bar");
+        byte[] result = fp.pack(c);
+        System.err.println(ISOUtil.hexString(result));
+      //  "30303837 666F6F20626172"
+        assertArrayEquals(ISOUtil.hex2byte("30303837666F6F20626172"), result);
+    }
+
+    @Test
+    public void testUnpack00() throws Throwable {
+        ISOBasePackager sfp = new EuroSubFieldPackager();
+        sfp.setFieldPackager(new ISOFieldPackager[] {
+                new IFA_LCHAR(9, "Test Field Name")
+            }
+        );
+        ISOBasePackager fp = new EuroSubFieldPackager();
+        fp.setFieldPackager(new ISOFieldPackager[] {
+                new ISOMsgFieldPackager(
+                    new IFA_LLLBINARY (999, "EUROPAY NESTED FIELD")
+                   ,sfp
+                )
+            }
+        );
+        ISOMsg c = new ISOMsg();
+//        c.set("0.0","foo bar");
+        fp.unpack(c, ISOUtil.hex2byte("30303837666F6F20626172"));
+      //  "30303837 666F6F20626172"
+        assertEquals(c.getString("0.0"), "foo bar");
     }
 
     @Test
