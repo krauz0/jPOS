@@ -187,4 +187,10 @@ public class ISODateTest {
         assertEquals(result.getTime(), 1293458217000L);
     }
 
+    @Test
+    public void testParseISODate4DigitYearNull() {
+        Date result = ISODate.parseISODate("00000000000000");
+        assertEquals(result.getTime(), 1293458217000L);
+    }
+
 }

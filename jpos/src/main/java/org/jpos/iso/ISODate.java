@@ -63,10 +63,8 @@ public class ISODate {
      * @return 
      */
     public static String formatDate (Date d, String pattern, TimeZone timeZone) {
-        SimpleDateFormat df =
-            (SimpleDateFormat) DateFormat.getDateTimeInstance();
+        DateFormat df = new SimpleDateFormat(pattern);
         df.setTimeZone(timeZone);
-        df.applyPattern(pattern);
         return df.format(d);
     }
 
@@ -92,12 +90,11 @@ public class ISODate {
      */
     public static Date parse(String s, TimeZone timeZone) {
         Date d = null;
-        SimpleDateFormat df =
-            (SimpleDateFormat) DateFormat.getDateInstance(
+        DateFormat df = DateFormat.getDateInstance(
                 DateFormat.SHORT, Locale.UK);
-        df.setTimeZone (timeZone);
+        df.setTimeZone(timeZone);
         try {
-            d = df.parse (s);
+            d = df.parse(s);
         } catch (ParseException e) {
         }
         return d;
@@ -126,13 +123,12 @@ public class ISODate {
      */
     public static Date parseDateTime(String s, TimeZone timeZone) {
         Date d = null;
-        SimpleDateFormat df =
-            (SimpleDateFormat) DateFormat.getDateTimeInstance(
+        DateFormat df = DateFormat.getDateTimeInstance(
                 DateFormat.SHORT, DateFormat.MEDIUM, Locale.UK);
 
-        df.setTimeZone (timeZone);
+        df.setTimeZone(timeZone);
         try {
-            d = df.parse (s);
+            d = df.parse(s);
         } catch (ParseException e) { }
         return d;
     }
@@ -145,7 +141,7 @@ public class ISODate {
      * @return Date
      */
     public static Date parseISODate (String d) {
-        return parseISODate (d, System.currentTimeMillis());
+        return parseISODate(d, System.currentTimeMillis());
     }
 
     /**
@@ -158,7 +154,7 @@ public class ISODate {
      * @return Date
      */
     public static Date parseISODate (String d, TimeZone timeZone) {
-        return parseISODate (d, System.currentTimeMillis(), timeZone);
+        return parseISODate(d, System.currentTimeMillis(), timeZone);
     }
 
     /**
@@ -170,7 +166,7 @@ public class ISODate {
      * @return Date
      */
     public static Date parseISODate (String d, long currentTime) {
-        return parseISODate (d, currentTime, TimeZone.getDefault() );
+        return parseISODate(d, currentTime, TimeZone.getDefault() );
     }
 
     /**
@@ -186,52 +182,49 @@ public class ISODate {
     public static Date parseISODate (String d, long currentTime, TimeZone timeZone) {
         int YY = 0;
         if (d.length() == 14) {
-            YY = Integer.parseInt(d.substring (0, 4));
-            d = d.substring (4);
+            YY = Integer.parseInt(d.substring(0, 4));
+            d = d.substring(4);
         }
         else if (d.length() == 12) {
-            YY = 2000 + Integer.parseInt(d.substring (0, 2));
-            d = d.substring (2);
+            YY = 2000 + Integer.parseInt(d.substring(0, 2));
+            d = d.substring(2);
         }
-        int MM = Integer.parseInt(d.substring (0, 2))-1;
-        int DD = Integer.parseInt(d.substring (2, 4));
-        int hh = Integer.parseInt(d.substring (4, 6));
-        int mm = Integer.parseInt(d.substring (6, 8));
-        int ss = Integer.parseInt(d.substring (8,10));
+        int MM = Integer.parseInt(d.substring(0, 2))-1;
+        int DD = Integer.parseInt(d.substring(2, 4));
+        int hh = Integer.parseInt(d.substring(4, 6));
+        int mm = Integer.parseInt(d.substring(6, 8));
+        int ss = Integer.parseInt(d.substring(8,10));
 
         Calendar cal = new GregorianCalendar();
         cal.setTimeZone(timeZone);
         Date now = new Date(currentTime);
 
-        cal.setTime (now);
-        cal.set (Calendar.MONTH, MM);
-        cal.set (Calendar.DATE, DD);
-        cal.set (Calendar.HOUR_OF_DAY, hh);
-        cal.set (Calendar.MINUTE, mm);
-        cal.set (Calendar.SECOND, ss);
-        cal.set (Calendar.MILLISECOND, 0);
+        cal.setTime(now);
+        cal.set(Calendar.MONTH, MM);
+        cal.set(Calendar.DATE, DD);
+        cal.set(Calendar.HOUR_OF_DAY, hh);
+        cal.set(Calendar.MINUTE, mm);
+        cal.set(Calendar.SECOND, ss);
+        cal.set(Calendar.MILLISECOND, 0);
 
         if (YY != 0) {
-            cal.set (Calendar.YEAR, YY);
+            cal.set(Calendar.YEAR, YY);
             return cal.getTime();
         }
-        else {
-            Date thisYear = cal.getTime();
-            cal.set (Calendar.YEAR, cal.get (Calendar.YEAR)-1);
-            Date previousYear = cal.getTime();
-            cal.set (Calendar.YEAR, cal.get (Calendar.YEAR)+2);
-            Date nextYear = cal.getTime();
-            if (Math.abs (now.getTime() - previousYear.getTime()) <
-                Math.abs (now.getTime() - thisYear.getTime()))
-            {
-                thisYear = previousYear;
-            } else if (Math.abs (now.getTime() - thisYear.getTime()) >
-                       Math.abs (now.getTime() - nextYear.getTime()))
-            {
-                thisYear = nextYear;
-            }
-            return thisYear;
+
+        Date thisYear = cal.getTime();
+        cal.set(Calendar.YEAR, cal.get(Calendar.YEAR)-1);
+        Date previousYear = cal.getTime();
+        cal.set(Calendar.YEAR, cal.get(Calendar.YEAR)+2);
+        Date nextYear = cal.getTime();
+        if (Math.abs(now.getTime() - previousYear.getTime()) <
+            Math.abs(now.getTime() - thisYear.getTime())) {
+            thisYear = previousYear;
+        } else if (Math.abs(now.getTime() - thisYear.getTime()) >
+                   Math.abs(now.getTime() - nextYear.getTime())) {
+            thisYear = nextYear;
         }
+        return thisYear;
     }
 
     /**
@@ -239,7 +232,7 @@ public class ISODate {
      * @return date in MMddHHmmss format suitable for FIeld 7
      */
     public static String getDateTime (Date d) {
-        return formatDate (d, "MMddHHmmss");
+        return formatDate(d, "MMddHHmmss");
     }
 
     /**
@@ -249,7 +242,7 @@ public class ISODate {
      * @return date in MMddHHmmss format suitable for FIeld 7
      */
     public static String getDateTime (Date d, TimeZone timeZone) {
-        return formatDate (d, "MMddHHmmss", timeZone);
+        return formatDate(d, "MMddHHmmss", timeZone);
     }
 
     /**
@@ -257,7 +250,7 @@ public class ISODate {
      * @return date in HHmmss format - suitable for field 12
      */
     public static String getTime (Date d) {
-        return formatDate (d, "HHmmss");
+        return formatDate(d, "HHmmss");
     }
 
     /**
@@ -267,7 +260,7 @@ public class ISODate {
      * @return date in HHmmss format - suitable for field 12
      */
     public static String getTime (Date d, TimeZone timeZone) {
-        return formatDate (d, "HHmmss", timeZone);
+        return formatDate(d, "HHmmss", timeZone);
     }
 
     /**
@@ -275,7 +268,7 @@ public class ISODate {
      * @return date in MMdd format - suitable for field 13
      */
     public static String getDate(Date d) {
-        return formatDate (d, "MMdd");
+        return formatDate(d, "MMdd");
     }
 
     /**
@@ -285,7 +278,7 @@ public class ISODate {
      * @return date in MMdd format - suitable for field 13
      */
     public static String getDate(Date d, TimeZone timeZone) {
-        return formatDate (d, "MMdd", timeZone);
+        return formatDate(d, "MMdd", timeZone);
     }
 
     /**
@@ -293,7 +286,7 @@ public class ISODate {
      * @return date in yyMMdd format - suitable for ANSI field 8
      */
     public static String getANSIDate(Date d) {
-        return formatDate (d, "yyMMdd");
+        return formatDate(d, "yyMMdd");
     }
 
     /**
@@ -303,15 +296,15 @@ public class ISODate {
      * @return date in yyMMdd format - suitable for ANSI field 8
      */
     public static String getANSIDate(Date d, TimeZone timeZone) {
-        return formatDate (d, "yyMMdd", timeZone);
+        return formatDate(d, "yyMMdd", timeZone);
     }
 
     public static String getEuropeanDate(Date d) {
-        return formatDate (d, "ddMMyy");
+        return formatDate(d, "ddMMyy");
     }
 
     public static String getEuropeanDate(Date d, TimeZone timeZone) {
-        return formatDate (d, "ddMMyy", timeZone);
+        return formatDate(d, "ddMMyy", timeZone);
     }
 
     /**
@@ -319,7 +312,7 @@ public class ISODate {
      * @return date in yyMM format - suitable for field 14
      */
     public static String getExpirationDate(Date d) {
-        return formatDate (d, "yyMM");
+        return formatDate(d, "yyMM");
     }
 
     /**
@@ -329,7 +322,7 @@ public class ISODate {
      * @return date in yyMM format - suitable for field 14
      */
     public static String getExpirationDate(Date d, TimeZone timeZone) {
-        return formatDate (d, "yyMM", timeZone);
+        return formatDate(d, "yyMM", timeZone);
     }
 
     /**
@@ -338,10 +331,10 @@ public class ISODate {
      * depending on interchange
      */
     public static String getJulianDate(Date d) {
-      String day = formatDate(d, "DDD", TimeZone.getDefault());
-      String year = formatDate(d, "yy", TimeZone.getDefault());
-      year = year.substring(1);
-      return year + day;
+        String day = formatDate(d, "DDD", TimeZone.getDefault());
+        String year = formatDate(d, "yy", TimeZone.getDefault());
+        year = year.substring(1);
+        return year + day;
     }
 
     /**
@@ -352,10 +345,10 @@ public class ISODate {
      * depending on interchange
      */
     public static String getJulianDate(Date d, TimeZone timeZone) {
-      String day = formatDate(d, "DDD", timeZone);
-      String year = formatDate(d, "yy", timeZone);
-      year = year.substring(1);
-      return year + day;
+        String day = formatDate(d, "DDD", timeZone);
+        String year = formatDate(d, "yy", timeZone);
+        year = year.substring(1);
+        return year + day;
     }
 
 }
