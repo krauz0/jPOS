@@ -21,7 +21,8 @@ package org.jpos.iso;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 import java.util.Calendar;
@@ -43,25 +44,25 @@ public class ISODateTest {
 
     @Test
     public void testONEYEAR() {
-        assertThat(ISODate.ONE_YEAR, is(31536000000L));
+        assertEquals(ISODate.ONE_YEAR, 31536000000L);
     }
 
     @Test
     public void testParseZoneAus() {
         Date result = ISODate.parse("27/12/2010", aus);
-        assertThat(result.getTime(), is(1293372000000L));
+        assertEquals(result.getTime(), 1293372000000L);
     }
 
     @Test
     public void testParseDateZoneAusNonsenseDateReturnsValue() {
         Date result = ISODate.parse("31/02/2011", aus);
-        assertThat(result.getTime(), is(1299074400000L));
+        assertEquals(result.getTime(), 1299074400000L);
     }
 
     @Test
     public void testParseBadInputSwallowsExceptionAndReturnsNull() {
         Date result = ISODate.parse("31/02/WIBBLE", aus);
-        assertThat(result, is(nullValue()));
+        assertNull(result);
     }
 
     @Test
@@ -75,19 +76,19 @@ public class ISODateTest {
     @Test
     public void testParseStringTimeZoneAus() {
         Date result = ISODate.parseDateTime("27/12/2010 13:44:55", aus);
-        assertThat(result.getTime(), is(1293421495000L));
+        assertEquals(result.getTime(), 1293421495000L);
     }
 
     @Test
     public void testParseStringTimeZoneAusNonsenseDateReturnsValue() {
         Date result = ISODate.parseDateTime("31/02/2011 13:44:55", aus);
-        assertThat(result.getTime(), is(1299123895000L));
+        assertEquals(result.getTime(), 1299123895000L);
     }
 
     @Test
     public void testParseStringTimeZoneNoTimeSentReturnsNull() {
         Date result = ISODate.parseDateTime("31/02/2011", aus);
-        assertThat(result, is(nullValue()));
+        assertNull(result);
     }
 
     @Test
@@ -95,7 +96,7 @@ public class ISODateTest {
         GregorianCalendar cal = new GregorianCalendar(aus);
         cal.set(2011, 02, 25);
         String result = ISODate.getJulianDate(cal.getTime(), aus);
-        assertThat(result, is("1084"));
+        assertEquals(result, "1084");
     }
 
     @Test
@@ -103,7 +104,7 @@ public class ISODateTest {
         GregorianCalendar cal = new GregorianCalendar(aus);
         cal.set(2011, 02, 25);
         String result = ISODate.getExpirationDate(cal.getTime(), aus);
-        assertThat(result, is("1103"));
+        assertEquals(result, "1103");
     }
 
     @Test
@@ -111,7 +112,7 @@ public class ISODateTest {
         GregorianCalendar cal = new GregorianCalendar(aus);
         cal.set(2011, 02, 25);
         String result = ISODate.getEuropeanDate(cal.getTime(), aus);
-        assertThat(result, is("250311"));
+        assertEquals(result, "250311");
     }
 
     @Test
@@ -119,7 +120,7 @@ public class ISODateTest {
         GregorianCalendar cal = new GregorianCalendar(aus);
         cal.set(2011, 02, 25);
         String result = ISODate.getANSIDate(cal.getTime(), aus);
-        assertThat(result, is("110325"));
+        assertEquals(result, "110325");
     }
 
     @Test
@@ -127,7 +128,7 @@ public class ISODateTest {
         GregorianCalendar cal = new GregorianCalendar(aus);
         cal.set(2011, 02, 25);
         String result = ISODate.getDate(cal.getTime(), aus);
-        assertThat(result, is("0325"));
+        assertEquals(result, "0325");
     }
 
     @Test
@@ -140,7 +141,7 @@ public class ISODateTest {
         // when
         String result = ISODate.getTime(date, aus);
         // then
-        assertThat(result, is("235556"));
+        assertEquals(result, "235556");
 
         Calendar cal2 = new GregorianCalendar(TimeZone.getDefault());
         cal2.set(2011, Calendar.FEBRUARY, 25, 23, 55, 56);
@@ -149,7 +150,7 @@ public class ISODateTest {
         // when
         String result2 = ISODate.getTime(date2, TimeZone.getDefault());
         // then
-        assertThat(result2, is("235556"));
+        assertEquals(result2, "235556");
     }
 
     @Test
@@ -162,7 +163,7 @@ public class ISODateTest {
         // when
         String result = ISODate.getDateTime(date, aus);
         // then
-        assertThat(result, is("0225235556"));
+        assertEquals(result, "0225235556");
 
         Calendar cal2 = new GregorianCalendar(TimeZone.getDefault());
         cal2.set(2011, Calendar.FEBRUARY, 25, 23, 55, 56);
@@ -171,19 +172,19 @@ public class ISODateTest {
         // when
         String result2 = ISODate.getDateTime(date2, TimeZone.getDefault());
         // then
-        assertThat(result2, is("0225235556"));
+        assertEquals(result2, "0225235556");
     }
 
     @Test
     public void testParseISODate4DigitYear() {
         Date result = ISODate.parseISODate("20101227235657", aus);
-        assertThat(result.getTime(), is(1293458217000L));
+        assertEquals(result.getTime(), 1293458217000L);
     }
 
     @Test
     public void testParseISODate2DigitYear() {
         Date result = ISODate.parseISODate("101227235657", aus);
-        assertThat(result.getTime(), is(1293458217000L));
+        assertEquals(result.getTime(), 1293458217000L);
     }
 
 }
