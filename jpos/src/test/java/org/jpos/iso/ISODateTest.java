@@ -33,6 +33,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class ISODateTest {
+
     TimeZone aus;
 
     @Before
@@ -47,19 +48,19 @@ public class ISODateTest {
 
     @Test
     public void testParseZoneAus() {
-        java.util.Date result = ISODate.parse("27/12/2010", aus);
+        Date result = ISODate.parse("27/12/2010", aus);
         assertThat(result.getTime(), is(1293372000000L));
     }
 
     @Test
     public void testParseDateZoneAusNonsenseDateReturnsValue() {
-        java.util.Date result = ISODate.parse("31/02/2011", aus);
+        Date result = ISODate.parse("31/02/2011", aus);
         assertThat(result.getTime(), is(1299074400000L));
     }
 
     @Test
     public void testParseBadInputSwallowsExceptionAndReturnsNull() {
-        java.util.Date result = ISODate.parse("31/02/WIBBLE", aus);
+        Date result = ISODate.parse("31/02/WIBBLE", aus);
         assertThat(result, is(nullValue()));
     }
 
@@ -67,32 +68,32 @@ public class ISODateTest {
     public void testParseDateZoneWithTimeSentReturnsOKButIgnoresTime() {
         long expectedDateWithoutTime = 1299074400000L;
         long unwantedDateIncludingTimeValue = 1299123895000L;
-        java.util.Date result = ISODate.parse("31/02/2011 13:45:55", aus);
+        Date result = ISODate.parse("31/02/2011 13:45:55", aus);
         assertThat(result.getTime(), allOf(is(expectedDateWithoutTime), is(not(unwantedDateIncludingTimeValue))));
     }
 
     @Test
     public void testParseStringTimeZoneAus() {
-        java.util.Date result = ISODate.parseDateTime("27/12/2010 13:44:55", aus);
+        Date result = ISODate.parseDateTime("27/12/2010 13:44:55", aus);
         assertThat(result.getTime(), is(1293421495000L));
     }
 
     @Test
     public void testParseStringTimeZoneAusNonsenseDateReturnsValue() {
-        java.util.Date result = ISODate.parseDateTime("31/02/2011 13:44:55", aus);
+        Date result = ISODate.parseDateTime("31/02/2011 13:44:55", aus);
         assertThat(result.getTime(), is(1299123895000L));
     }
 
     @Test
     public void testParseStringTimeZoneNoTimeSentReturnsNull() {
-        java.util.Date result = ISODate.parseDateTime("31/02/2011", aus);
+        Date result = ISODate.parseDateTime("31/02/2011", aus);
         assertThat(result, is(nullValue()));
     }
 
     @Test
     public void testGetJulianDate() {
         GregorianCalendar cal = new GregorianCalendar(aus);
-        cal.set(2011, 02, 25);        
+        cal.set(2011, 02, 25);
         String result = ISODate.getJulianDate(cal.getTime(), aus);
         assertThat(result, is("1084"));
     }
@@ -140,7 +141,7 @@ public class ISODateTest {
         String result = ISODate.getTime(date, aus);
         // then
         assertThat(result, is("235556"));
-        
+
         Calendar cal2 = new GregorianCalendar(TimeZone.getDefault());
         cal2.set(2011, Calendar.FEBRUARY, 25, 23, 55, 56);
         cal2.set(Calendar.MILLISECOND, 23);
@@ -162,7 +163,7 @@ public class ISODateTest {
         String result = ISODate.getDateTime(date, aus);
         // then
         assertThat(result, is("0225235556"));
-        
+
         Calendar cal2 = new GregorianCalendar(TimeZone.getDefault());
         cal2.set(2011, Calendar.FEBRUARY, 25, 23, 55, 56);
         cal2.set(Calendar.MILLISECOND, 23);
@@ -175,13 +176,14 @@ public class ISODateTest {
 
     @Test
     public void testParseISODate4DigitYear() {
-        java.util.Date result = ISODate.parseISODate("20101227235657", aus);
+        Date result = ISODate.parseISODate("20101227235657", aus);
         assertThat(result.getTime(), is(1293458217000L));
     }
 
     @Test
     public void testParseISODate2DigitYear() {
-        java.util.Date result = ISODate.parseISODate("101227235657", aus);
+        Date result = ISODate.parseISODate("101227235657", aus);
         assertThat(result.getTime(), is(1293458217000L));
     }
+
 }
