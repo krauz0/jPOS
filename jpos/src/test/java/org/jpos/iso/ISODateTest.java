@@ -18,6 +18,9 @@
 
 package org.jpos.iso;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -30,16 +33,23 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
-import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class ISODateTest {
 
-    TimeZone aus;
+    static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
-    @Before
-    public void setUp() throws Exception {
+    static TimeZone aus;
+    static Date someTimeBefore;
+    static Date someTimeAfter;
+
+    @BeforeClass
+    static public void setUpClass() throws Exception {
         aus = TimeZone.getTimeZone("GMT+10:00");
+        someTimeBefore = df.parse("1969-07-04 12:45:16");
+        someTimeAfter  = df.parse("2169-07-04 12:45:16");
     }
 
     @Test
@@ -188,9 +198,59 @@ public class ISODateTest {
     }
 
     @Test
+    public void testParseISODate0DigitYearNull() {
+        Date result = ISODate.parseISODate("0000000000");
+        assertNull(result);
+    }
+
+    @Test
+    public void testParseISODate2DigitYearNull() {
+        Date result = ISODate.parseISODate("000000000000");
+        assertNull(result);
+    }
+
+    @Test
     public void testParseISODate4DigitYearNull() {
         Date result = ISODate.parseISODate("00000000000000");
-        assertEquals(result.getTime(), 1293458217000L);
+        assertNull(result);
+    }
+
+    @Test
+    public void testParseISODate0DigitYearSomeTimeBefore() throws Exception {
+        Date result = ISODate.parseISODate("0523114317", someTimeBefore.getTime());
+        assertEquals(result, df.parse("1969-05-23 11:43:17"));
+    }
+
+    @Ignore(value = "Wrong assumption, that baseTime is always after 2000")
+    @Test
+    public void testParseISODate2DigitYearSomeTimeBefore() throws Exception {
+        Date result = ISODate.parseISODate("570523114317", someTimeBefore.getTime());
+        assertEquals(result, df.parse("1957-05-23 11:43:17"));
+    }
+
+    @Test
+    public void testParseISODate4DigitYearSomeTimeBefore() throws Exception {
+        Date result = ISODate.parseISODate("19570523114317", someTimeBefore.getTime());
+        assertEquals(result, df.parse("1957-05-23 11:43:17"));
+    }
+
+    @Test
+    public void testParseISODate0DigitYearSomeTimeAfter() throws Exception {
+        Date result = ISODate.parseISODate("0523114317", someTimeAfter.getTime());
+        assertEquals(result, df.parse("2169-05-23 11:43:17"));
+    }
+
+    @Ignore(value = "Wrong assumption, that baseTime is always before 2100")
+    @Test
+    public void testParseISODate2DigitYearSomeTimeAfter() throws Exception {
+        Date result = ISODate.parseISODate("570523114317", someTimeAfter.getTime());
+        assertEquals(result, df.parse("2157-05-23 11:43:17"));
+    }
+
+    @Test
+    public void testParseISODate4DigitYearSomeTimeAfter() throws Exception {
+        Date result = ISODate.parseISODate("21570523114317", someTimeAfter.getTime());
+        assertEquals(result, df.parse("2157-05-23 11:43:17"));
     }
 
 }

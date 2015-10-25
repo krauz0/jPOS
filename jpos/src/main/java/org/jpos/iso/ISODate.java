@@ -195,6 +195,9 @@ public class ISODate {
         int mm = Integer.parseInt(d.substring(6, 8));
         int ss = Integer.parseInt(d.substring(8,10));
 
+        if (MM < 0)
+            return null;
+
         Calendar cal = new GregorianCalendar();
         cal.setTimeZone(timeZone);
         Date now = new Date(currentTime);
