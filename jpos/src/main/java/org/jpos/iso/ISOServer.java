@@ -161,7 +161,8 @@ public class ISOServer extends Observable
                 if (allowIP.indexOf('*') == -1) {                   // specific IP with no wildcards
                     specificIPPerms.put(allowIP, true);
                 } else {                                            // there's a wildcard
-                    wildcardAllow= (wildcardAllow == null) ? new ArrayList<>() : wildcardAllow;
+                    if (wildcardDeny == null)
+                        wildcardAllow = new ArrayList<>();
                     String[] parts= allowIP.split("[*]");
                     wildcardAllow.add(parts[0]);                    // keep only the first part
                 }
@@ -180,7 +181,8 @@ public class ISOServer extends Observable
                     Boolean oldVal= specificIPPerms.put(denyIP, false);
                     conflict= (oldVal == Boolean.TRUE);
                 } else {                                            // there's a wildcard
-                    wildcardDeny= (wildcardDeny == null) ? new ArrayList<>() : wildcardDeny;
+                    if (wildcardDeny == null)
+                        wildcardDeny = new ArrayList<>();
                     String[] parts= denyIP.split("[*]");
                     if (wildcardAllow != null && wildcardAllow.contains(parts[0]))
                         conflict= true;
