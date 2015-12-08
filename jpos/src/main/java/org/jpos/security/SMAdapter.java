@@ -20,6 +20,9 @@ package  org.jpos.security;
 
 import org.javatuples.Pair;
 
+import java.security.MessageDigest;
+import java.security.PublicKey;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -177,6 +180,21 @@ public interface SMAdapter {
      * DEK: Data Encryption Key.
      */
     String TYPE_DEK = "DEK";
+
+    /**
+     * RSA: Private Key.
+     */
+    String TYPE_RSA_SK = "RSA_SK";
+
+    /**
+     * HMAC: Hash Message Authentication Code <i>(with key usage)</i>.
+     */
+    String TYPE_HMAC   = "HMAC";
+
+    /**
+     * RSA: Public Key.
+     */
+    String TYPE_RSA_PK = "RSA_PK";
 
     /**
      * PIN Block Format adopted by ANSI (ANSI X9.8) and is one of
@@ -1242,7 +1260,7 @@ public interface SMAdapter {
      * @throws SMException
      */
     byte[] generateEDE_MAC(byte[] data, SecureDESKey kd) throws SMException;
-    
+
     /**
      * Translate key from encryption under the LMK held in key change storage
      * to encryption under a new LMK.
@@ -1253,6 +1271,33 @@ public interface SMAdapter {
      */
     SecureDESKey translateKeyFromOldLMK(SecureDESKey kd) throws SMException;
 
+
+    /**
+     * Generate a public/private key pair.
+     *
+     * @param spec algorithm specific parameters (contains e.g. key size)
+     * @param usage key usage ({@code null} if key usage is not supported by generator)
+     * @return key pair generated according to passed parameters
+     */
+    Pair<SecurePrivateKey, PublicKey> generateKeyPair(AlgorithmParameterSpec spec
+      , KeyUsage usage) throws SMException;
+
+
+
+    /**
+     * Calculate signature of Data Block.
+     *
+     * @param hash identifier of the hash algorithm used to hash passed data.
+     * @param privateKey private key used to compute data signature.
+     * @param data data to be signed.
+     * @return signature of passed data.
+     * @throws SMException
+     */
+    byte[] calculateSignature(MessageDigest hash, SecurePrivateKey privateKey
+            ,byte[] data) throws SMException;
+
+
+
     /**
      * Erase the key change storage area of memory
      *
@@ -1262,6 +1307,7 @@ public interface SMAdapter {
      * @throws SMException
      */
     void eraseOldLMK() throws SMException;
+
 }
 
 

@@ -31,6 +31,9 @@ import org.jpos.util.NameRegistrar;
 import org.jpos.util.NameRegistrar.NotFoundException;
 import org.jpos.util.SimpleMsg;
 
+import java.security.MessageDigest;
+import java.security.PublicKey;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -1173,6 +1176,52 @@ public class BaseSMAdapter
     }
 
     @Override
+    public Pair<SecurePrivateKey, PublicKey> generateKeyPair(AlgorithmParameterSpec spec
+            , KeyUsage usage) throws SMException {
+        List<Loggeable> cmdParameters = new ArrayList<Loggeable>();
+        cmdParameters.add(new SimpleMsg("parameter", "Algorithm Parameter Spec", spec));
+        cmdParameters.add(new SimpleMsg("parameter", "Key Usage", usage));
+
+        LogEvent evt = new LogEvent(this, "s-m-operation");
+        evt.addMessage(new SimpleMsg("command", "Generate public/private key pair", cmdParameters));
+        Pair<SecurePrivateKey, PublicKey> result = null;
+        try {
+            result = generateKeyPairImpl(spec, usage);
+            evt.addMessage(new SimpleMsg("result", "Key Pair", result));
+        } catch (Exception e) {
+            evt.addMessage(e);
+            throw  e instanceof SMException ? (SMException) e : new SMException(e);
+        } finally {
+            Logger.log(evt);
+        }
+        return result;
+    }
+
+    @Override
+    public byte[] calculateSignature(MessageDigest hash, SecurePrivateKey privateKey
+            ,byte[] data) throws SMException {
+        List<Loggeable> cmdParameters = new ArrayList<Loggeable>();
+        cmdParameters.add(new SimpleMsg("parameter", "Hash Identifier", hash));
+        cmdParameters.add(new SimpleMsg("parameter", "Private Key", privateKey));
+        cmdParameters.add(new SimpleMsg("parameter", "data", data));
+
+        LogEvent evt = new LogEvent(this, "s-m-operation");
+        evt.addMessage(new SimpleMsg("command", "Generate data signature", cmdParameters));
+        byte[] result = null;
+        try {
+            result = calculateSignatureImpl(hash, privateKey, data);
+            evt.addMessage(new SimpleMsg("result", "Data Signature", result));
+        } catch (Exception e) {
+            evt.addMessage(e);
+            throw  e instanceof SMException ? (SMException) e : new SMException(e);
+        } finally {
+            Logger.log(evt);
+        }
+        return result;
+    }
+
+
+    @Override
     public void eraseOldLMK () throws SMException {
         SimpleMsg[] cmdParameters =  {
         };
@@ -1216,7 +1265,7 @@ public class BaseSMAdapter
      * @return translated key with {@code destKeyScheme} scheme
      * @throws SMException
      */
-    public SecureDESKey translateKeySchemeImpl (SecureDESKey key, KeyScheme destKeyScheme)
+    protected SecureDESKey translateKeySchemeImpl (SecureDESKey key, KeyScheme destKeyScheme)
             throws SMException {
         throw  new SMException("Operation not supported in: " + this.getClass().getName());
     }
@@ -1790,6 +1839,31 @@ public class BaseSMAdapter
      * @throws SMException if the parity of the imported key is not adjusted AND checkParity = true
      */
     protected SecureDESKey translateKeyFromOldLMKImpl (SecureDESKey kd) throws SMException {
+        throw  new SMException("Operation not supported in: " + this.getClass().getName());
+    }
+
+    /**
+     * Your SMAdapter should override this method if it has this functionality
+     * @param spec algorithm specific parameters (contains e.g. key size)
+     * @param usage key usage ({@code null} if key usage is not supported by generator)
+     * @return key pair generated according to passed parameters
+     * @throws SMException
+     */
+    protected Pair<SecurePrivateKey, PublicKey> generateKeyPairImpl(AlgorithmParameterSpec spec
+            , KeyUsage usage) throws SMException {
+        throw  new SMException("Operation not supported in: " + this.getClass().getName());
+    }
+
+    /**
+     * Your SMAdapter should override this method if it has this functionality
+     * @param hash identifier of the hash algorithm used to hash passed data.
+     * @param privateKey private key used to compute data signature.
+     * @param data data to be sifned.
+     * @return signature of passed data.
+     * @throws SMException
+     */
+    protected byte[] calculateSignatureImpl(MessageDigest hash, SecurePrivateKey privateKey
+            ,byte[] data) throws SMException {
         throw  new SMException("Operation not supported in: " + this.getClass().getName());
     }
 
