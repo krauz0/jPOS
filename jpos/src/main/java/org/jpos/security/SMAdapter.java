@@ -21,6 +21,8 @@ package  org.jpos.security;
 import org.javatuples.Pair;
 
 import java.security.MessageDigest;
+import java.security.PublicKey;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -1268,6 +1270,18 @@ public interface SMAdapter {
      * @throws SMException if the parity of the imported key is not adjusted AND checkParity = true
      */
     SecureDESKey translateKeyFromOldLMK(SecureDESKey kd) throws SMException;
+
+
+    /**
+     * Generate a public/private key pair.
+     *
+     * @param spec algorithm specific parameters (contains e.g. key size)
+     * @param usage key usage ({@code null} if key usage is not supported by generator)
+     * @return key pair generated according to passed parameters
+     * @throws org.jpos.security.SMException
+     */
+    Pair<PublicKey, SecurePrivateKey> generateKeyPair(AlgorithmParameterSpec spec
+      , KeyUsage usage) throws SMException;
 
 
 
